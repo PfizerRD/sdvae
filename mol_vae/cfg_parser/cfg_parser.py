@@ -73,11 +73,10 @@ def renumber_independent_rings(smiles):
     for (input_smiles, output_smiles) in tests:
         assert renumber_independent_rings(input_smiles) == output_smiles, f"Did not work for {input_smiles}"
     ```
-    """
+    """   
+    smiles = canonicalize_smiles(smiles)
     if sum(c.isdigit() for c in smiles) == 0:
         return smiles
-    
-    smiles = canonicalize_smiles(smiles)
     
     indices, digits = zip(*[(i,int(c)) for i,c in enumerate(smiles) if c.isdigit()])
     if len(digits) == 0: 
