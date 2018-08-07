@@ -493,7 +493,7 @@ class AttMolGraphDecoder(object):
 
 def create_tree_decoder():
     fname = cmd_args.grammar_file.split('/')[-1]
-    print('using', fname)
+    #print('using', fname)
     tree_decoder = AttMolGraphDecoder()
     return tree_decoder
 
