@@ -1,10 +1,145 @@
 #!/usr/bin/env python3
 
 import random
+import logging
+logger = logging.getLogger(__name__)
 
 import nltk
 from nltk.grammar import Nonterminal, Production
 
+from openeye import oechem
+
+def canonicalize_smiles(smiles):
+    mol = oechem.OEMol()
+    oechem.OESmilesToMol(mol, smiles)
+    smiles = oechem.OECreateCanSmiString(mol)
+    return smiles
+
+
+def renumber_independent_rings(smiles):
+    """Renumbers rings.
+    
+    The SMILES specifications suggest that digits denoting ring closures can be reused.
+    This is necessary for the parser in this library to not fail. 
+    For example "C1CC1CC2CC2" will fail, but "C1CC1CC1CC1" will not.
+    
+    This function carries out this renumbering. It assumes that the first ring digit
+    is 1, that no ring digits higher than 8 are present, and that all rings are 
+    closed.
+    
+    Inputs
+    ------
+    smiles:   str, SMILES string
+    
+    Outputs
+    ------
+    smiles:   str, renumbered SMILES string
+    
+    
+    Examples
+    --------
+    ```
+    tests = [
+        (
+            "C1C(C1)OC2CC2",
+            "C1CC1OC1CC1"
+        ),
+        (
+            "Fc1c(nc(nc1)OCc2c(cc(cc2)Cl)F)C3CCN(CC3)Cc4n(c5c(n4)cccc5)C", 
+             "Cn1c2ccccc2nc1CN1CCC(CC1)c1c(cnc(n1)OCc1ccc(cc1F)Cl)F"
+        ),
+        (
+            "N2(CCC1(CNC1)CC2)C(=O)OCc3ccccc3",
+            "c1ccc(cc1)COC(=O)N1CCC2(CC1)CNC2",
+        ),
+        (
+            "Clc1nc2c(cn1)CCC32CCN(CC3)C(=O)OC(C)(C)C",
+            "CC(C)(C)OC(=O)N1CCC2(CCc3c2nc(nc3)Cl)CC1",
+        ),
+        (
+            "s1c(ccc1)C(=O)Oc2c(cc(cc2)/C=C/3\\N=C(OC3=O)c4ccc(cc4)NC(=O)OC(C)(C)C)OC", # Needs canonicalization
+            "CC(C)(C)OC(=O)Nc1ccc(cc1)C1=NC(=Cc2ccc(c(c2)OC)OC(=O)c2cccs2)C(=O)O1",
+        ),
+        (
+            "C1CC12CC2", 
+            "C1CC12CC2",
+        ),
+        (
+            "FC(F)(F)c1ccc(cc1)-c2ccc(cc2)[C@H](Nc3ncc(nc3)C(=O)NCCC(=O)O)CC(=O)N4C5(CCC4)CCCCC5",
+            "c1cc(ccc1c1ccc(cc1)C(F)(F)F)C(CC(=O)N1CCCC12CCCCC2)Nc1cnc(cn1)C(=O)NCCC(=O)O",
+        ),
+    ]
+
+    for (input_smiles, output_smiles) in tests:
+        assert renumber_independent_rings(input_smiles) == output_smiles, f"Did not work for {input_smiles}"
+    ```
+    """
+    if sum(c.isdigit() for c in smiles) == 0:
+        return smiles
+    
+    smiles = canonicalize_smiles(smiles)
+    
+    indices, digits = zip(*[(i,int(c)) for i,c in enumerate(smiles) if c.isdigit()])
+    if len(digits) == 0: 
+        return smiles
+    if len(digits) %2 != 0:
+        raise ValueError("There is an unclosed ring: " + smiles)
+    if max(digits) > 8:
+        raise ValueError("More than 8 rings: " + smiles)
+    
+    logger.debug(indices)
+    logger.debug(digits)
+    logger.debug(smiles)
+    
+    def find_opener(i):
+        digit = digits[i]
+        return indices[digits[:i].index(digit)]
+    
+    #available_digits = set(range(2, 9))
+    i = 0
+    old_digit = 0
+    closer_index = indices[i]
+    current_digit = digits[0]
+    open_rings = {current_digit}
+    available_digits = set(range(2,9))
+    ring_index ={current_digit:1}
+    for digit in digits[1:]:
+        i += 1
+        logging.debug(f"\n\nprocessing digit {i}: {digit}")
+        
+        if digit in open_rings:
+            # close a ring
+            opener_index = find_opener(i)
+            closer_index = indices[i]
+            logger.debug(f"Changing position {opener_index}")
+            smiles = smiles[:opener_index] + str(ring_index[digit]) + smiles[opener_index+1:]
+            logger.debug(smiles)
+            logger.debug(f"Changing position {closer_index}")
+            smiles = smiles[:closer_index] + str(ring_index[digit]) + smiles[closer_index+1:]
+            logger.debug(smiles)
+            logger.debug(f"Closed ring at position {closer_index} and released {ring_index[digit]}")
+            open_rings.remove(digit)
+            available_digits.add(ring_index[digit])
+            logger.debug("Open Rings: " + " ".join([str(x) for x in list(open_rings)]))
+            logger.debug("Available Digits: " + " ".join([str(x) for x in list(available_digits)]))
+            old_digit = digit
+        
+        else:
+            # open a new ring:
+            if indices[i] - closer_index == 1:
+                temp_available_digits = available_digits.copy()
+                temp_available_digits.remove(ring_index[old_digit])
+                grabbed_digit = min(temp_available_digits)
+            else:
+                grabbed_digit = min(available_digits)
+            ring_index[digit] = grabbed_digit
+            open_rings.add(digit)
+            available_digits.remove(grabbed_digit)
+            logger.debug(f"Opening ring at position {indices[i]} and grabbed {ring_index[digit]}")
+            logger.debug("Open Rings: " + " ".join([str(x) for x in list(open_rings)]))
+            logger.debug("Available Digits: " + " ".join([str(x) for x in list(available_digits)]))
+    
+    return smiles       
 
 class Grammar(object):
     def __init__(self, filepath=None):
@@ -134,6 +269,7 @@ def parse(sent, grammar):
     '''
     # `sent` should be string
     assert isinstance(sent, str)
+    sent = renumber_independent_rings(sent)
 
     sent = grammar.tokenize(sent)
     if sent is None:
