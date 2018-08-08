@@ -7,7 +7,7 @@ cmd_opt.add_argument('-saved_model', default=None, help='start from existing mod
 cmd_opt.add_argument('-grammar_file', help='grammar production rules')
 cmd_opt.add_argument('-smiles_file', help='list of smiles strings')
 cmd_opt.add_argument('-data_dump', help='location of h5 file')
-cmd_opt.add_argument('-encoder_type', default='tree_lstm', help='choose encoder from [tree_lstm | s2v]')
+cmd_opt.add_argument('-encoder_type', default='cnn', help='choose encoder from [cnn]')
 cmd_opt.add_argument('-ae_type', default='vae', help='choose ae arch from [autoenc | vae]')
 cmd_opt.add_argument('-rnn_type', default='gru', help='choose rnn cell from [gru | sru]')
 cmd_opt.add_argument('-loss_type', default='perplexity', help='choose loss from [perplexity | binary]')
