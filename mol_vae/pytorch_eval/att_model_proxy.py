@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-from past.builtins import range
 
 import os
 import sys
@@ -95,11 +94,11 @@ class AttMolProxy(object):
 
         assert cmd_args.saved_model is not None
 
-	if cmd_args.mode == 'cpu':
-		self.ae.load_state_dict(torch.load(cmd_args.saved_model, map_location=lambda storage, loc: storage))
+        if cmd_args.mode == 'cpu':
+            self.ae.load_state_dict(torch.load(cmd_args.saved_model, map_location=lambda storage, loc: storage))
         else:
-        	self.ae.load_state_dict(torch.load(cmd_args.saved_model))
-
+            self.ae.load_state_dict(torch.load(cmd_args.saved_model))
+        
         self.onehot_walker = OnehotBuilder()
         self.tree_decoder = create_tree_decoder()
         self.grammar = parser.Grammar(cmd_args.grammar_file)
