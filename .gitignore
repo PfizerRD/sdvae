@@ -4,3 +4,11 @@
 *.pyc
 dropbox
 dropbox/
+
+# Jupyter notebooks
+notebooks/
+
+# Outputs
+*.smi
+*.log
+
