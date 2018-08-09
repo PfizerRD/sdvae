@@ -7,12 +7,10 @@ logger = logging.getLogger(__name__)
 import nltk
 from nltk.grammar import Nonterminal, Production
 
-from openeye import oechem
+from rdkit import Chem
 
 def canonicalize_smiles(smiles):
-    mol = oechem.OEMol()
-    oechem.OESmilesToMol(mol, smiles)
-    smiles = oechem.OECreateCanSmiString(mol)
+    smiles = Chem.MolToSmiles(Chem.MolFromSmiles(smiles),True)
     return smiles
 
 
@@ -104,19 +102,19 @@ def renumber_independent_rings(smiles):
     ring_index ={current_digit:1}
     for digit in digits[1:]:
         i += 1
-        logging.debug(f"\n\nprocessing digit {i}: {digit}")
+        logging.debug("\n\nprocessing digit %d: %d", i, digit)
         
         if digit in open_rings:
             # close a ring
             opener_index = find_opener(i)
             closer_index = indices[i]
-            logger.debug(f"Changing position {opener_index}")
+            logger.debug("Changing position %d", opener_index)
             smiles = smiles[:opener_index] + str(ring_index[digit]) + smiles[opener_index+1:]
             logger.debug(smiles)
-            logger.debug(f"Changing position {closer_index}")
+            logger.debug("Changing position %d", closer_index)
             smiles = smiles[:closer_index] + str(ring_index[digit]) + smiles[closer_index+1:]
             logger.debug(smiles)
-            logger.debug(f"Closed ring at position {closer_index} and released {ring_index[digit]}")
+            logger.debug("Closed ring at position %d and released %d", closer_index, ring_index[digit])
             open_rings.remove(digit)
             available_digits.add(ring_index[digit])
             logger.debug("Open Rings: " + " ".join([str(x) for x in list(open_rings)]))
@@ -134,7 +132,7 @@ def renumber_independent_rings(smiles):
             ring_index[digit] = grabbed_digit
             open_rings.add(digit)
             available_digits.remove(grabbed_digit)
-            logger.debug(f"Opening ring at position {indices[i]} and grabbed {ring_index[digit]}")
+            logger.debug("Opening ring at position %d and grabbed %d", indices[i], ring_index[digit])
             logger.debug("Open Rings: " + " ".join([str(x) for x in list(open_rings)]))
             logger.debug("Available Digits: " + " ".join([str(x) for x in list(available_digits)]))
     
