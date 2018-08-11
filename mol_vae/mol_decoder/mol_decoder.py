@@ -140,7 +140,39 @@ class PerpCalculator(nn.Module):
             return loss
         print('unknown loss type %s' % cmd_args.loss_type)
         raise NotImplementedError
+        
+        
+class PropCalculator(nn.Module):
+    def __init__(self, latent_dim):
+        super(PropCalculator, self).__init__()
+        self.latent_dim = latent_dim
+        self.hidden_dim = 1000
+        self.drop1 = nn.Dropout(p=0.2)
+        self.act = nn.ReLU()
+        self.l1 = nn.Linear(self.latent_dim, self.hidden_dim, bias=True)
+        self.l2 = nn.Linear(self.hidden_dim, self.hidden_dim, bias=True)
+        self.l3 = nn.Linear(self.hidden_dim, 1, bias=True)
+        self.loss_fn = nn.MSELoss()
 
+    '''
+    input:
+        true_binary: one-hot, with size=time_steps x bsize x DECISION_DIM
+        rule_masks: binary tensor, with size=time_steps x bsize x DECISION_DIM
+        raw_logits: real tensor, with size=time_steps x bsize x DECISION_DIM
+    '''
+    def forward(self, z, prop_values):
+        out = self.l1(z)
+        out = self.act(out)
+        out = self.drop1(out)
+        out = self.l2(out)
+        out = self.act(out)
+        out = self.drop1(out)
+        out = self.l3(out)
+        loss = self.loss_fn(out, prop_values)
+        
+        return loss
+
+        
 def batch_make_att_masks(node_list, tree_decoder = None, walker = None, dtype=np.byte):
     if walker is None:
         walker = OnehotBuilder()

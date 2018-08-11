@@ -7,6 +7,7 @@ cmd_opt.add_argument('-saved_model', default=None, help='start from existing mod
 cmd_opt.add_argument('-grammar_file', help='grammar production rules')
 cmd_opt.add_argument('-smiles_file', help='list of smiles strings')
 cmd_opt.add_argument('-data_dump', help='location of h5 file')
+cmd_opt.add_argument('-prop_file', help='location of data file')
 cmd_opt.add_argument('-encoder_type', default='cnn', help='choose encoder from [cnn]')
 cmd_opt.add_argument('-ae_type', default='vae', help='choose ae arch from [autoenc | vae]')
 cmd_opt.add_argument('-rnn_type', default='gru', help='choose rnn cell from [gru | sru]')
@@ -22,6 +23,7 @@ cmd_opt.add_argument('-num_epochs', type=int, default=1, help='number of epochs'
 cmd_opt.add_argument('-learning_rate', type=float, default=0.01, help='init learning_rate')
 cmd_opt.add_argument('-prob_fix', type=float, default=0, help='numerical problem')
 cmd_opt.add_argument('-kl_coeff', type=float, default=1, help='coefficient for kl divergence used in vae')
+cmd_opt.add_argument('-prop_coeff', type=float, default=1, help='coefficient for property prediction loss used in vae')
 cmd_opt.add_argument('-eps_std', type=float, default=0.01, help='the standard deviation used in reparameterization tric')
 
 cmd_args, _ = cmd_opt.parse_known_args()

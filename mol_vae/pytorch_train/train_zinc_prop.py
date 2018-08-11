@@ -31,7 +31,7 @@ import h5py
 
 def load_data():
     prop_file = cmd_args.prop_file
-    prop_values = np.load_txt(prop_file)
+    prop_values = np.loadtxt(prop_file)
     h5f = h5py.File(cmd_args.data_dump, 'r')
     all_true_binary = h5f['x'][:]
     all_rule_masks = h5f['masks'][:]
@@ -60,8 +60,9 @@ def get_batch_input(selected_idx, data_binary, data_masks, data_prop, volatile=F
 
     v_tb = Variable(t_vb, volatile=volatile)
     v_ms = Variable(t_ms, volatile=volatile)
+    v_p = Variable(t_p, volatile=volatile)
 
-    return x_inputs, v_tb, v_ms, t_p
+    return x_inputs, v_tb, v_ms, v_p
 
 def loop_dataset(phase, ae, sample_idxes, data_binary, data_masks, data_prop, optimizer=None):
     total_loss = []
@@ -92,7 +93,7 @@ def loop_dataset(phase, ae, sample_idxes, data_binary, data_masks, data_prop, op
         else:
             loss = loss_list[0] + loss_list[1] + loss_list[2]
             kl = loss_list[1].data.cpu().numpy()[0]
-            prop = lost_list[2].data.cpu().numpy()[0]
+            prop = loss_list[2].data.cpu().numpy()[0]
 
         minibatch_loss = loss.data.cpu().numpy()[0]
         pbar.set_description(' %s loss: %0.5f perp: %0.5f kl: %0.5f prop: %0.5f' % (phase, minibatch_loss, perp, kl, prop))

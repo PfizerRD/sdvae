@@ -62,13 +62,13 @@ def get_encoder():
 
 class MolPropVAE(nn.Module):
     def __init__(self):
-        super(MolVAE, self).__init__()
-        print('using vae')
+        super(MolPropVAE, self).__init__()
+        print('using propvae')
         self.latent_dim = cmd_args.latent_dim
         self.encoder = get_encoder()
         self.state_decoder = StateDecoder(max_len=cmd_args.max_decode_steps, latent_dim=cmd_args.latent_dim)
         self.perp_calc = PerpCalculator()
-        self.prop_calc = PropCalculator(input_dim=cmd_args.latent_dim)
+        self.prop_calc = PropCalculator(latent_dim=cmd_args.latent_dim)
 
     def reparameterize(self, mu, logvar):
         if self.training:
@@ -93,5 +93,5 @@ class MolPropVAE(nn.Module):
 
         kl_loss = -0.5 * torch.sum(1 + z_log_var - z_mean ** 2 - torch.exp(z_log_var), -1)
         
-        return (perplexity, cmd_args.kl_coeff * torch.mean(kl_loss), prop_loss)
+        return (perplexity, cmd_args.kl_coeff * torch.mean(kl_loss), cmd_args.prop_coeff*prop_loss)
 
